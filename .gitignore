@@ -10,3 +10,20 @@ results/
 
 # VS Code settings
 .vscode/
+
+# Local or generated dataset content
+dataset/debug/
+dataset/development/
+dataset/yolo/images/
+
+# Local configuration
+.env
+config.local.json
+
+# Python
+__pycache__/
+*.pyc
+
+# Training outputs
+runs/
+
