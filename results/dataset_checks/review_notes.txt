@@ -1,0 +1,3 @@
+test\F5_1_1_1.ts-frames_frame-1450_visualisation.png - example of bottom half of surface mostly not visible
+train\F4_1_1_2.ts-frames_frame-1505_visualisation.png - quite unclear image in general
+valid\F7_1_2_1.ts-frames_frame-1145_visualisation.png - blurry/low res resulting in poor mask upon visual inspection
