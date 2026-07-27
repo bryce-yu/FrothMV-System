@@ -1,0 +1,39 @@
+Froth Bubble Dataset Structure Report
+========================================
+Dataset root: C:\FrothMV-Data\froth-bubbles-dataset
+
+Split: train
+Image folder: C:\FrothMV-Data\froth-bubbles-dataset\train\train_images
+Mask folder: C:\FrothMV-Data\froth-bubbles-dataset\train\train_masks
+PNG images: 13613
+PNG masks: 13613
+Images without matching masks: 0
+Masks without matching images: 0
+Duplicate image names: 0
+Duplicate mask names: 0
+
+----------------------------------------
+
+Split: valid
+Image folder: C:\FrothMV-Data\froth-bubbles-dataset\valid\valid_images
+Mask folder: C:\FrothMV-Data\froth-bubbles-dataset\valid\valid_masks
+PNG images: 2546
+PNG masks: 2546
+Images without matching masks: 0
+Masks without matching images: 0
+Duplicate image names: 0
+Duplicate mask names: 0
+
+----------------------------------------
+
+Split: test
+Image folder: C:\FrothMV-Data\froth-bubbles-dataset\test\test_images
+Mask folder: C:\FrothMV-Data\froth-bubbles-dataset\test\test_masks
+PNG images: 3631
+PNG masks: 3631
+Images without matching masks: 0
+Masks without matching images: 0
+Duplicate image names: 0
+Duplicate mask names: 0
+
+----------------------------------------
