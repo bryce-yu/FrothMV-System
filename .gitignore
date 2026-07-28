@@ -33,3 +33,13 @@ __pycache__/
 # Training outputs
 runs/
 
+# Trained model weights
+models/*.pt
+
+# Ignore large YOLO evaluation outputs
+results/yolo_evaluation/predicted_masks/
+results/yolo_evaluation/visualisations/
+
+# Allow lightweight evaluation tables
+!results/yolo_evaluation/
+!results/yolo_evaluation/*.csv
