@@ -63,16 +63,64 @@ python -c "import cv2, numpy, pandas, matplotlib, scipy, ultralytics; print('Env
 
 ## Git Workflow
 
-After completing a meaningful change:
+The project folder is currently synchronised through OneDrive and also connected to GitHub.
+
+To avoid conflicts:
+
+- Do not edit the project on both laptops at the same time.
+- Allow OneDrive to finish syncing before opening the project on the other laptop.
+- Check Git status before committing, pulling or pushing.
+- Do not commit the full dataset, virtual environments or large generated outputs.
+
+### Starting work
+
+Open the project in VS Code, activate the required environment, then run:
 
 ```powershell
 git status
-git add .
-git commit -m "Describe the completed change"
+git pull
 ```
 
-View recent commits:
+### Saving completed work
+
+After completing a meaningful task:
 
 ```powershell
-git log --oneline
+git status
+git add <files-to-commit>
+git commit -m "Brief description of completed work"
+git push
 ```
+
+Prefer adding specific files rather than using git add . without checking what will be included.
+
+### Switching laptops
+
+Before stopping work on one laptop:
+```powershell
+git status
+git push
+```
+
+Wait for OneDrive to finish syncing.
+
+On the other laptop:
+
+```powershell
+git status
+git pull
+```
+
+Then activate the appropriate Python environment.
+
+### Dataset handling
+
+The full Kaggle froth dataset is stored locally outside OneDrive and Git.
+
+Each laptop accesses its local dataset copy through:
+
+```text
+FROTH_DATASET_ROOT
+```
+
+The repository stores only code, documentation, configuration files, manifests and lightweight results.
