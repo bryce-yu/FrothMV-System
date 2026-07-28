@@ -80,3 +80,24 @@ The raw PNG files remain in the external local dataset folder and are not duplic
 Selection was performed using a fixed random seed of 42. Relative paths were recorded so that the same subset can be accessed from both development laptops through `FROTH_DATASET_ROOT`.
 
 Manual visual inspection of a range of the images selected was conducted, and confirmed sufficient visual diversity in terms of bubble size, density and both clear images and challenging glare/boundaries. 
+
+## Ground-truth mask metric extraction
+
+The fixed reduced manifests were used to access 200 training, 40 validation and 40 testing image-mask pairs from the external raw dataset.
+
+Metrics were extracted directly from the supplied ground-truth masks using OpenCV contour detection. The initial image-level outputs were:
+
+- bubble count
+- mean contour area in pixels squared
+- mean equivalent circular diameter in pixels
+- mean circularity
+
+Contours smaller than 10 pixels squared were excluded from the initial summary to reduce the influence of very small mask fragments.
+
+The results were saved under `results/mask_metrics/`.
+
+A preliminary comparison between selected images and metric values showed that:
+- Images with many smaller regions tend to have higher bubble count, as expected.
+- Images with visibly larger bubbles tend to have both larger mean area and equivalent diameter, as expected.
+- Circularity may be more difficult to measure and use, as for all manifest images the majority return a circularity value in the 0.6 range, with just some going to 0.5 or 0.7.  
+- All manifest image masks contained contours smaller than 10 pixels squared as the minimum contour area extracted from every image was exactly 10.0, which was the lower limit set. 

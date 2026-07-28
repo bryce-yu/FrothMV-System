@@ -6,6 +6,7 @@ import cv2
 import matplotlib.pyplot as plt
 
 from src.dataset_paths import get_dataset_root
+from src.manifest_utils import load_manifest
 
 
 SPLIT_FOLDERS = {
@@ -240,6 +241,43 @@ def visualise_samples(
         print(f"Saved: {output_path}")
 
 
+def visualise_manifest_samples(
+    split_name: str,
+    sample_count: int,
+    random_seed: int,
+) -> None:
+    """Visualise samples from the fixed reduced manifest."""
+
+    manifest_path = (
+        Path("dataset")
+        / "manifests"
+        / f"{split_name}_reduced.csv"
+    )
+
+    entries = load_manifest(manifest_path)
+
+    sample_count = min(sample_count, len(entries))
+
+    random_generator = random.Random(random_seed)
+    selected_entries = random_generator.sample(
+        entries,
+        sample_count,
+    )
+
+    print(f"Manifest: {manifest_path}")
+    print(f"Entries found: {len(entries)}")
+    print(f"Samples selected: {sample_count}")
+
+    for entry in selected_entries:
+        output_path = save_visualisation(
+            split_name=split_name,
+            image_path=entry["image_path"],
+            mask_path=entry["mask_path"],
+        )
+
+        print(f"Saved: {output_path}")
+
+
 def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
@@ -275,10 +313,10 @@ def parse_arguments() -> argparse.Namespace:
 def main() -> None:
     arguments = parse_arguments()
 
-    visualise_samples(
+    visualise_manifest_samples(
         split_name=arguments.split,
         sample_count=arguments.count,
-        random_seed=arguments.seed,
+        random_seed=arguments.seed, 
     )
 
 
