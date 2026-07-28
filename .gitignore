@@ -5,8 +5,14 @@ venv/
 __pycache__/
 *.pyc
 
-# Generated outputs
-results/
+# Ignore generated results by default
+results/*
+
+# Keep selected lightweight result folders
+!results/dataset_checks/
+!results/dataset_checks/**
+!results/mask_metrics/
+!results/mask_metrics/**
 
 # VS Code settings
 .vscode/
