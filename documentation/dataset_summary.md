@@ -101,3 +101,46 @@ A preliminary comparison between selected images and metric values showed that:
 - Images with visibly larger bubbles tend to have both larger mean area and equivalent diameter, as expected.
 - Circularity may be more difficult to measure and use, as for all manifest images the majority return a circularity value in the 0.6 range, with just some going to 0.5 or 0.7.  
 - All manifest image masks contained contours smaller than 10 pixels squared as the minimum contour area extracted from every image was exactly 10.0, which was the lower limit set. 
+
+## Baseline YOLOv8 test inference
+
+The previously trained YOLOv8 segmentation model was evaluated on the fixed 40-image reduced test manifest.
+
+The initial inference configuration was:
+
+- confidence threshold: 0.25
+- inference image size: 640 pixels
+- minimum contour area: 10 pixels squared
+
+For each test image, the predicted instance masks were combined into a binary mask. Contours were then extracted using the same approach used for the ground-truth masks.
+
+The predicted outputs included:
+
+- YOLO instance count
+- contour-based bubble count
+- mean contour area
+- mean equivalent circular diameter
+- mean circularity
+
+Predicted metrics were compared with the corresponding metrics extracted from the supplied ground-truth masks.
+
+### Initial observations
+
+- Predicted masks tended to underestimate the number of bubbles in the image.
+- The images with large bubble count errors are the ones with many small, dense bubbles, many of which were not picked up by the prediction mask (e.g. F5_2_2_2.ts-frames_frame-1110.png).
+- The images with lower bubble-count errors generally appeared to contain moderately sized bubbles at moderate density, although this was based on qualitative inspection of the evaluated samples (e.g. F5_1_2_1.ts-frames_frame-1785.png).
+- Per image percentage errors are largely in the range of 40% or less.
+
+- Predicted masks tended to overestimate mean bubble area. A likely contributing factor is that many small bubbles were missed, removing low-area objects from the mean. Merging of neighbouring bubbles may also increase the predicted contour areas.
+- As the number of missed bubbles in each image varies, the impact of these missed bubbles differs for each image in terms of mean area, as errors are in a wide range from as low as 0.32% up to 130.92%.
+- However, overall, per image percentage errors are still largely in the range of 50% or less.
+
+- The mean absolute error in mean equivalent diameter (pixels) of 2.2904 is reasonably small compared to the typical diameters in low tens of pixels, with the majority of per image percentage errors being below 20% and only a few at around 40%.
+
+- The mean absolute error in mean circularity of 0.0408 compared to the scale of 0-1 is reasonably small, with the majority of per image percentage errors being below 10%.
+
+### Baseline conclusion
+
+The existing YOLOv8 segmentation model produced predicted masks for all 40 test images, demonstrating complete inference coverage on the fixed reduced test subset.
+
+Overall, the model is suitable as an initial baseline for estimating average bubble geometry, but requires improvement before bubble count can be treated as a reliable supervisory variable, especially under dense small-bubble conditions.
