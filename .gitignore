@@ -5,30 +5,17 @@ venv/
 __pycache__/
 *.pyc
 
-# Ignore generated results by default
-results/*
-
-# Keep selected lightweight result folders
-!results/dataset_checks/
-!results/dataset_checks/**
-!results/mask_metrics/
-!results/mask_metrics/**
-
 # VS Code settings
 .vscode/
-
-# Local or generated dataset content
-dataset/debug/
-dataset/development/
-dataset/yolo/images/
 
 # Local configuration
 .env
 config.local.json
 
-# Python
-__pycache__/
-*.pyc
+# Local or generated dataset content
+dataset/debug/
+dataset/development/
+dataset/yolo/images/
 
 # Training outputs
 runs/
@@ -36,10 +23,31 @@ runs/
 # Trained model weights
 models/*.pt
 
-# Ignore large YOLO evaluation outputs
-results/yolo_evaluation/predicted_masks/
-results/yolo_evaluation/visualisations/
+# Ignore generated results by default
+results/*
 
-# Allow lightweight evaluation tables
+# Keep selected lightweight result folders
+!results/dataset_checks/
+!results/dataset_checks/**
+
+!results/mask_metrics/
+!results/mask_metrics/**
+
+# Keep lightweight YOLO baseline evaluation outputs
 !results/yolo_evaluation/
 !results/yolo_evaluation/*.csv
+!results/yolo_evaluation/representative_cases/
+!results/yolo_evaluation/representative_cases/**
+
+# Keep lightweight controlled experiment outputs
+!results/yolo_experiments/
+!results/yolo_experiments/**/
+
+# Re-ignore large generated experiment outputs
+results/yolo_experiments/**/predicted_masks/
+results/yolo_experiments/**/visualisations/
+
+# Keep experiment tables and representative cases
+!results/yolo_experiments/**/*.csv
+!results/yolo_experiments/**/representative_cases/
+!results/yolo_experiments/**/representative_cases/**

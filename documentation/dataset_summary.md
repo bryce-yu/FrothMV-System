@@ -124,6 +124,13 @@ The predicted outputs included:
 
 Predicted metrics were compared with the corresponding metrics extracted from the supplied ground-truth masks.
 
+### Baseline mean absolute errors
+
+  bubble_count: 128.4750
+  mean_area_pixels: 72.2486
+  mean_equivalent_diameter_pixels: 2.2904
+  mean_circularity: 0.0408
+
 ### Initial observations
 
 - Predicted masks tended to underestimate the number of bubbles in the image.
@@ -144,3 +151,29 @@ Predicted metrics were compared with the corresponding metrics extracted from th
 The existing YOLOv8 segmentation model produced predicted masks for all 40 test images, demonstrating complete inference coverage on the fixed reduced test subset.
 
 Overall, the model is suitable as an initial baseline for estimating average bubble geometry, but requires improvement before bubble count can be treated as a reliable supervisory variable, especially under dense small-bubble conditions.
+
+## Controlled inference experiments
+
+Three configurations were evaluated on the same fixed 40-image test manifest at an inference image size of 640 pixels.
+
+| Configuration | Confidence | Minimum area (px²) | Bubble-count MAE | Mean-area MAE | Diameter MAE | Circularity MAE |
+|---|---:|---:|---:|---:|---:|---:|
+| Baseline | 0.25 | 10 | 128.4750 | 72.2486 | 2.2904 | 0.0408 |
+| Lower confidence | 0.15 | 10 | 103.1250 | 62.4766 | 2.1010 | 0.0369 |
+| Smaller contour filter | 0.25 | 5 | 128.1000 | 71.9972 | 2.2734 | 0.0404 |
+
+### Preliminary interpretation
+
+- Overall, changing minimum area from 10 to 5 barely changes the results, suggesting that the main issue is missing YOLO detections, and not OpenCV removing small contours afterwards - all mean absolute errors remain very similar.
+- Lowering the confidence threshold did not appear to introduce substantial noisy or false regions in the inspected visualisations, and generally captured additional regions that aligned with the ground-truth masks.
+- Comparing the dense, small bubbles case, the predictions and metric errors remained almost unchanged, indicating that lowering confidence alone does not address the model’s difficulty with very small, closely packed bubbles.
+- Comparing the intermediate prediction case, there is a decrease in all absolute/percentage errors in metric predictions.
+- Comparing the good prediction case, there is mostly an improvement in prediction - with a decrease in errors for bubble count, mean area and circularity and only an increase in error for mean diameter from about 2% to 8%. 
+
+Overall, reducing the minimum contour area from 10 to 5 px² produced negligible changes, suggesting that the main limitation is missing YOLO detections rather than OpenCV filtering. Lowering the confidence threshold improved all four aggregate MAEs and generally improved the intermediate and good representative cases without obvious additional noise. However, it did not improve the dense small-bubble failure case. Therefore, the lower-confidence configuration is the provisional best setting, while dense small-bubble detection remains a model-level limitation.
+
+The provisional best inference configuration was:
+
+- confidence threshold: 0.15
+- inference image size: 640 pixels
+- minimum contour area: 10 pixels squared
