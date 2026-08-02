@@ -33,12 +33,6 @@ results/*
 !results/mask_metrics/
 !results/mask_metrics/**
 
-# Keep lightweight YOLO baseline evaluation outputs
-!results/yolo_evaluation/
-!results/yolo_evaluation/*.csv
-!results/yolo_evaluation/representative_cases/
-!results/yolo_evaluation/representative_cases/**
-
 # Keep lightweight controlled experiment outputs
 !results/yolo_experiments/
 !results/yolo_experiments/**/

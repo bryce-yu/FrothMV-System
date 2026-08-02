@@ -170,10 +170,69 @@ Three configurations were evaluated on the same fixed 40-image test manifest at 
 - Comparing the intermediate prediction case, there is a decrease in all absolute/percentage errors in metric predictions.
 - Comparing the good prediction case, there is mostly an improvement in prediction - with a decrease in errors for bubble count, mean area and circularity and only an increase in error for mean diameter from about 2% to 8%. 
 
-Overall, reducing the minimum contour area from 10 to 5 px² produced negligible changes, suggesting that the main limitation is missing YOLO detections rather than OpenCV filtering. Lowering the confidence threshold improved all four aggregate MAEs and generally improved the intermediate and good representative cases without obvious additional noise. However, it did not improve the dense small-bubble failure case. Therefore, the lower-confidence configuration is the provisional best setting, while dense small-bubble detection remains a model-level limitation.
+## Provisional inference configuration
 
-The provisional best inference configuration was:
+The provisional configuration selected for subsequent development is:
 
-- confidence threshold: 0.15
-- inference image size: 640 pixels
-- minimum contour area: 10 pixels squared
+- Confidence threshold: 0.15
+- Minimum contour area: 10 px²
+- Inference image size: 640 pixels
+
+Lowering the confidence threshold reduced the aggregate mean absolute errors for all four extracted metrics without introducing substantial visible noise in the inspected cases.
+
+Reducing the minimum contour area from 10 px² to 5 px² produced negligible changes. This suggests that the main limitation is missed YOLO detections rather than small predicted contours being removed during OpenCV post-processing.
+
+Dense regions containing many small bubbles remain a notable failure case and were not substantially improved by lowering the confidence threshold.
+
+### Preliminary processing time
+
+The selected configuration was timed over the fixed 40-image test subset with visualisation generation disabled.
+
+- Hardware: CPU
+- Images: 40
+- Confidence threshold: 0.15
+- Minimum contour area: 10 px²
+- Inference image size: 640 pixels
+- Total processing time: ~51.586 seconds (Run 1: 53.678s, Run 2: 49.494s)
+- Average processing time: ~1.290 seconds per image (Run 1: 53.678/40=1.342s, Run 2: 49.494/40=1.237s)
+
+This timing includes model inference, mask combination and metric extraction, but excludes visualisation generation.
+
+### Highest-error images
+
+#### Bubble-count percentage error
+
+| Rank | Image | Percentage error | Visual observation |
+|---:|---|---:|---|
+| 1 | F5_2_2_2.ts-frames_frame-1110.png | 53.301% | Dense small bubbles missed |
+| 2 | F5_2_2_1.ts-frames_frame-395.png | 51.892% | Dense small bubbles missed |
+| 3 | F5_2_3_1.ts-frames_frame-1135.png | 48.776% | Dense small bubbles missed |
+| 4 | F5_2_2_2.ts-frames_frame-1495.png | 48.175% | Dense small bubbles missed |
+| 5 | F5_2_2_1.ts-frames_frame-1340.png | 47.764% | Dense small bubbles missed |
+
+#### Mean-area percentage error
+
+| Rank | Image | Percentage error | Visual observation |
+|---:|---|---:|---|
+| 1 | F5_1_1_2.ts-frames_frame-125.png | 132.514% | Merged neighbouring bubbles, one large incorrectly predicted contour |
+| 2 | F5_1_1_1.ts-frames_frame-1540.png | 78.209% | Merged neighbouring bubbles, one unusual, moderate-sized predicted contour |
+| 3 | F5_1_1_1.ts-frames_frame-1575.png | 56.248% | Merged neighbouring bubbles |
+| 4 | F5_1_1_1.ts-frames_frame-1105.png | 53.520% | Merged neighbouring bubbles |
+| 5 | F5_1_1_1.ts-frames_frame-1480.png | 52.695% | Merged neighbouring bubbles |
+
+## Week 2 conclusion
+
+## Week 2 conclusion
+
+Week 2 established a reproducible dataset and evaluation workflow using fixed train, validation and test manifests. Ground-truth bubble metrics were extracted from binary masks, and the existing YOLOv8 segmentation model was evaluated on the fixed 40-image test subset.
+
+The model produced predicted masks for all test images. Controlled inference experiments identified a confidence threshold of 0.15, minimum contour area of 10 px² and inference image size of 640 pixels as the provisional best configuration. Lowering the confidence threshold reduced the aggregate mean absolute errors for all four
+metrics, while reducing the minimum contour area from 10 px² to 5 px² produced negligible changes.
+
+The selected configuration processed the 40-image test subset in an average of approximately 51.586 seconds on CPU, corresponding to approximately 1.290 seconds per image. This timing includes inference, mask combination and metric extraction, but excludes visualisation generation.
+
+The highest bubble-count errors consistently occurred in images containing dense regions of small bubbles. This indicates that the primary bubble-count limitation is the model failing to detect many small, closely packed bubbles.
+
+The highest mean-area errors showed a different failure pattern. These images commonly contained merged neighbouring bubbles or unusually large predicted contours, which increased the calculated mean area.
+
+Overall, the model currently estimates mean equivalent diameter and circularity more consistently than bubble count and mean area. The main remaining limitations are under-detection in dense small-bubble conditions and merging of neighbouring predicted regions. These results provide a clear basis for Week 3, which will investigate whether these limitations should be addressed through post-processing changes, targeted model improvement, or formalisation of the current pipeline.

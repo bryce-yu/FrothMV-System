@@ -1,0 +1,4 @@
+configuration,confidence,minimum_contour_area,image_size,bubble_count_mae,mean_area_mae,mean_equivalent_diameter_mae,mean_circularity_mae
+baseline_conf025_area10,0.25,10,640,128.4750,72.2486,2.2904,0.0408
+conf015_area10,0.15,10,640,103.1250,62.4766,2.1010,0.0369
+conf025_area5,0.25,5,640,128.1000,71.9972,2.2734,0.0404
