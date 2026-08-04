@@ -336,3 +336,31 @@ The next Week 3 work should focus on:
 6. otherwise retaining the current model and formalising the reusable end-to-end Python pipeline.
 
 The investigation should remain controlled and should not become an open-ended hyperparameter search.
+
+
+## Representative Instance-Mask Inspection
+
+Six representative images were selected from the corrected `max_det=1000` diagnostic results:
+
+- two with the largest instance-to-contour reductions;
+- two with the largest final contour-count errors;
+- two with relatively low final contour-count errors.
+
+| Image | Category | GT contours | YOLO instances | Combined contours | Main observation |
+|---|---|---:|---:|---:|---|
+| F5_2_2_2.ts-frames_frame-1110.png | Largest reduction | 621 | 915 | 579 | Duplicate or overlapping predictions |
+| F5_2_2_1.ts-frames_frame-1525.png | Largest reduction | 517 | 832 | 529 | Duplicate or overlapping predictions |
+| F5_2_2_1.ts-frames_frame-395.png | Highest final error | 555 | 607 | 401 | Duplicate or overlapping predictions |
+| F5_2_1_2.ts-frames_frame-440.png | Highest final error | 272 | 242 | 181 | Duplicate or overlapping predictions |
+| F5_1_2_1.ts-frames_frame-380.png | Low final error | 292 | 421 | 292 | Duplicate or overlapping predictions |
+| F5_1_2_1.ts-frames_frame-605.png | Low final error | 265 | 369 | 266 | Duplicate or overlapping predictions |
+
+### Visual interpretation
+
+Across the six representative cases, the individual-mask overlays indicate that the reduction from YOLO instance count to combined contour count is primarily associated with duplicate or strongly overlapping predictions covering the same bubble regions.
+
+When the instance masks are combined, these overlapping predictions collapse into single connected components. This substantially reduces the reported count and generally produces a contour count closer to the ground-truth contour count.
+
+Some local merging of neighbouring bubbles and insufficient separation of dense small bubbles are still visible, particularly in the more difficult images. However, these effects appear secondary to the large number of overlapping or duplicate instance predictions.
+
+The observed behaviour confirms that the raw YOLO instance count should not be interpreted directly as the number of physical bubbles. For the current model and dataset, the combined-mask contour count provides the more meaningful bubble-count estimate.

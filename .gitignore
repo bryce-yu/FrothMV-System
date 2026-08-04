@@ -50,3 +50,5 @@ results/yolo_experiments*/**/visualisations/
 !results/yolo_diagnostics/
 !results/yolo_diagnostics/**/
 !results/yolo_diagnostics/**/*.csv
+!results/yolo_diagnostics/representative_cases/
+!results/yolo_diagnostics/representative_cases/**
