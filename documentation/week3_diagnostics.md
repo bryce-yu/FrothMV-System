@@ -364,3 +364,42 @@ When the instance masks are combined, these overlapping predictions collapse int
 Some local merging of neighbouring bubbles and insufficient separation of dense small bubbles are still visible, particularly in the more difficult images. However, these effects appear secondary to the large number of overlapping or duplicate instance predictions.
 
 The observed behaviour confirms that the raw YOLO instance count should not be interpreted directly as the number of physical bubbles. For the current model and dataset, the combined-mask contour count provides the more meaningful bubble-count estimate.
+
+## Improvement Decision
+
+Based on the corrected `max_det=1000` evaluation and representative instance-mask inspection, no immediate model retraining will be performed.
+
+The raw YOLO instance count was substantially less accurate than the combined-mask contour count. Visual inspection indicated that the high instance count was primarily caused by duplicate or strongly overlapping predictions covering the same bubble regions.
+
+The current model will therefore be retained, and the combined-mask external contour method will be used for the final soft-sensor bubble count and bubble-size metrics.
+
+The raw YOLO instance count will be retained as a diagnostic value but will not be interpreted directly as the physical bubble count.
+
+This decision prioritises development of a reliable and repeatable end-to-end MV processing pipeline while documenting the remaining limitations in dense small-bubble cases.
+
+## MV Pipeline Consolidation
+
+Following the corrected inference evaluation and representative instance-mask inspection, the existing YOLO model was retained.
+
+The machine-vision processing logic was refactored into a reusable pipeline consisting of:
+
+1. one-time YOLO model loading;
+2. configurable image inference;
+3. extraction of valid instance masks;
+4. combination of instance masks into one binary mask;
+5. extraction of external contours;
+6. calculation of aggregate froth metrics;
+7. structured dictionary output.
+
+The selected pipeline configuration is:
+
+- confidence threshold: 0.15;
+- inference image size: 640;
+- maximum detections: 1000;
+- minimum contour area: 10 px².
+
+The final bubble count, mean area, equivalent diameter and circularity are calculated from the combined-mask external contours.
+
+Raw and valid YOLO instance counts are retained as diagnostic values but are not interpreted directly as physical bubble counts.
+
+The pipeline now provides a reusable `process_image()` interface that can later be called by the OPC-UA publishing client without embedding the machine-vision implementation directly in the communication layer.

@@ -52,3 +52,14 @@ results/yolo_experiments*/**/visualisations/
 !results/yolo_diagnostics/**/*.csv
 !results/yolo_diagnostics/representative_cases/
 !results/yolo_diagnostics/representative_cases/**
+
+# Ignore generated pipeline run outputs
+results/pipeline_runs/*
+
+# Keep lightweight pipeline summary tables if required
+!results/pipeline_runs/
+!results/pipeline_runs/*.csv
+!results/pipeline_runs/*.json
+
+# Ignore temporary pipeline test images
+dataset/pipeline_test_images/

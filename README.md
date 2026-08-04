@@ -124,3 +124,17 @@ FROTH_DATASET_ROOT
 ```
 
 The repository stores only code, documentation, configuration files, manifests and lightweight results.
+
+## Run the MV pipeline
+
+Process one image:
+
+```powershell
+python src/run_single_image.py path\to\image.png
+```
+
+Process a folder:
+
+```powershell
+python src/run_folder_pipeline.py path\to\image_folder
+```
