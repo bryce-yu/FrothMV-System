@@ -34,14 +34,19 @@ results/*
 !results/mask_metrics/**
 
 # Keep lightweight controlled experiment outputs
-!results/yolo_experiments/
-!results/yolo_experiments/**/
+!results/yolo_experiments*/
+!results/yolo_experiments*/**/
 
 # Re-ignore large generated experiment outputs
-results/yolo_experiments/**/predicted_masks/
-results/yolo_experiments/**/visualisations/
+results/yolo_experiments*/**/predicted_masks/
+results/yolo_experiments*/**/visualisations/
 
 # Keep experiment tables and representative cases
-!results/yolo_experiments/**/*.csv
-!results/yolo_experiments/**/representative_cases/
-!results/yolo_experiments/**/representative_cases/**
+!results/yolo_experiments*/**/*.csv
+!results/yolo_experiments*/**/representative_cases/
+!results/yolo_experiments*/**/representative_cases/**
+
+# Keep lightweight YOLO diagnostic outputs
+!results/yolo_diagnostics/
+!results/yolo_diagnostics/**/
+!results/yolo_diagnostics/**/*.csv

@@ -276,6 +276,7 @@ def process_test_manifest(
                 source=str(image_path),
                 conf=confidence,
                 imgsz=image_size,
+                max_det=1000,
                 verbose=False,
             )
 
