@@ -138,3 +138,63 @@ Results:
 ## Conclusion
 
 The consolidated `FrothMVPipeline` reproduces the selected experimental soft-sensor outputs and is suitable as the standard MV interface for subsequent industrial communication integration.
+
+
+# Week 4 – Python OPC-UA Integration
+
+## Session 2 – MV / OPC-UA Integration
+
+### Purpose
+
+Integrate the validated FrothMVPipeline with a reusable OPC-UA communication layer while maintaining separation between machine-vision processing and industrial communications.
+
+### Architecture
+
+Image/folder
+→ FrothMVPipeline.process_image()
+→ structured metrics dictionary
+→ FrothOPCUAServer.update_metrics()
+→ OPC-UA nodes
+→ UaExpert / future EAE client
+
+### OPC-UA Configuration
+
+Endpoint:
+`opc.tcp://0.0.0.0:4841/froth-test/`
+
+Namespace:
+`http://froth.project/test`
+
+### Nodes
+
+| Variable          | Type    | NodeId      | Direction    |
+| ----------------- | ------- | ----------- | ------------ |
+| `BubbleCount`     | Int32   | `ns=2;i=2`  | Python → EAE |
+| `MeanECD`         | Double  | `ns=2;i=3`  | Python → EAE |
+| `TestHeartbeat`   | Int32   | `ns=2;i=4`  | Python → EAE |
+| `CommandFromEAE`  | Boolean | `ns=2;i=5`  | EAE → Python |
+| `MeanArea`        | Double  | `ns=2;i=6`  | Python → EAE |
+| `MeanCircularity` | Double  | `ns=2;i=7`  | Python → EAE |
+| `ProcessingTime`  | Double  | `ns=2;i=8`  | Python → EAE |
+| `PipelineOK`      | Boolean | `ns=2;i=9`  | Python → EAE |
+| `PipelineStatus`  | String  | `ns=2;i=10` | Python → EAE |
+
+
+### Validation
+
+- OPC-UA server started successfully
+- UaExpert connected successfully
+- heartbeat incremented
+- BubbleCount updated from real MV pipeline
+- MeanECD updated
+- MeanArea updated
+- MeanCircularity updated
+- ProcessingTime updated
+- PipelineStatus updated
+- CommandFromEAE changed successfully from UaExpert
+- Python detected command changes
+- heartbeat remained responsive during inference
+
+### Conclusion
+
+The validated FrothMVPipeline has been successfully decoupled from and integrated with a reusable OPC-UA communication layer. The Python side is ready for EAE OPC-UA client integration.
