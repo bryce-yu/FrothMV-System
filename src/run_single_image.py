@@ -51,16 +51,15 @@ def main() -> None:
 
     pipeline = FrothMVPipeline(config)
 
-    metrics = pipeline.process_image(
-        args.image_path
-    )
+    try:
+        metrics = pipeline.process_image(args.image_path)
+        print(json.dumps(metrics, indent=4))
 
-    print(
-        json.dumps(
-            metrics,
-            indent=4,
-        )
-    )
+    except FileNotFoundError as exc:
+        print(f"ERROR: {exc}")
+
+    except Exception as exc:
+        print(f"ERROR: Failed to process image: {exc}")
 
 
 if __name__ == "__main__":

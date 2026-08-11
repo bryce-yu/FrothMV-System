@@ -16,6 +16,7 @@ config.local.json
 dataset/debug/
 dataset/development/
 dataset/yolo/images/
+dataset/pipeline_validation_images/
 
 # Training outputs
 runs/

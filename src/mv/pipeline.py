@@ -12,8 +12,8 @@ import cv2
 import numpy as np
 from ultralytics import YOLO
 
-from mv.config import MVConfig
-from mv.metrics import (
+from .config import MVConfig
+from .metrics import (
     calculate_contour_metrics,
     combine_instance_masks,
     extract_external_contours,
