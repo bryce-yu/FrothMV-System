@@ -1,10 +1,12 @@
-# Week 4 – MV Pipeline Validation
+# Week 4 – MV Pipeline Validation and OPC-UA Integration
 
-## Purpose
+## Session 1 - MV Pipeline Validation
+
+### Purpose
 
 The consolidated FrothMV pipeline developed during Week 3 was validated to confirm that refactoring the experimental YOLO/OpenCV scripts into reusable modules did not alter the selected soft-sensor calculation.
 
-## Configuration
+### Configuration
 
 - Model: `models/best.pt`
 - Confidence: 0.15
@@ -12,7 +14,7 @@ The consolidated FrothMV pipeline developed during Week 3 was validated to confi
 - Maximum detections: 1000
 - Minimum contour area: 10 px²
 
-## Unit Tests
+### Unit Tests
 
 `pytest tests/test_metrics.py -v`
 
@@ -102,7 +104,7 @@ ERROR: Image not found: does_not_exist.png
 - Corrupt-image handling: PASS. A deliberately invalid .png file was detected as unreadable by OpenCV. The error was logged for that image only, while the remaining valid images were processed successfully and batch CSV/JSON outputs were still generated.
 - i.e. one bad input does not terminate the entire batch
 
-## Regression Validation
+### Regression Validation
 
 Reference:
 
@@ -125,7 +127,7 @@ Results:
 - Mean-ECD maximum difference: 0/negligible
 - Mean-circularity maximum difference: 0/negligible
 
-## Processing Performance
+### Processing Performance
 
 - Performed a second proper performance run using consolidated code to check processing time remains consistent:
 
@@ -135,12 +137,11 @@ Results:
 - Mean processing time: ~1.916 s/image
 - Week 3 reference: ~1.847 s/image 
 
-## Conclusion
+### Conclusion
 
 The consolidated `FrothMVPipeline` reproduces the selected experimental soft-sensor outputs and is suitable as the standard MV interface for subsequent industrial communication integration.
 
 
-# Week 4 – Python OPC-UA Integration
 
 ## Session 2 – MV / OPC-UA Integration
 
@@ -198,3 +199,90 @@ Namespace:
 ### Conclusion
 
 The validated FrothMVPipeline has been successfully decoupled from and integrated with a reusable OPC-UA communication layer. The Python side is ready for EAE OPC-UA client integration.
+
+
+
+## Session 3 – MV Outputs Integrated into EAE
+
+### Purpose
+
+Extend the previously validated Python → EAE OPC UA heartbeat test to transfer actual FrothMV soft-sensor outputs into EcoStruxure Automation Expert.
+
+### Architecture
+
+Image
+→ FrothMVPipeline
+→ Python asyncua server
+→ OPC UA
+→ EAE OPCUA_READ
+→ supervisory variables
+
+### Read Variables
+
+| Variable | NodeId | EAE Type |
+|---|---|---|
+| BubbleCount | ns=2;i=2 | DINT |
+| MeanECD | ns=2;i=3 | LREAL |
+| TestHeartbeat | ns=2;i=4 | DINT |
+| MeanArea | ns=2;i=6 | LREAL |
+| MeanCircularity | ns=2;i=7 | LREAL |
+
+### Checks / Observations
+
+- No obvious communication delay beyond expected polling/inference time.
+- During restart/reconnection test, Connect Function Block indicates temporary 'reconnecting' status and when Python server is restarted it automatically reconnects/polls
+
+### Validation
+
+- OPCUA_CONNECT status: connected
+- Connection error: 0
+- Heartbeat polling: PASS
+- BubbleCount polling: PASS
+- MeanECD polling: PASS
+- MeanArea polling: PASS
+- MeanCircularity polling: PASS
+- EAE values matched Python/UaExpert values for selected images
+- MV metrics changed sequentially as new images were processed
+- Communication remained stable during inference
+
+### Composite Function Block Development
+
+To simplify the EAE application and avoid exposing the individual OPC UA communication blocks throughout the supervisory logic, the working OPCUA_CONNECT and OPCUA_READ structure was encapsulated into a reusable composite function block.
+
+The composite contains:
+
+- one OPCUA_CONNECT block;
+- separate OPCUA_READ blocks for:
+  - TestHeartbeat
+  - BubbleCount
+  - MeanECD
+  - MeanArea
+  - MeanCircularity;
+- internal event and data wiring required to initialise the connection and start polling.
+
+The composite exposes the following OutputVars:
+
+- Heartbeat : DINT
+- BubbleCount : DINT
+- MeanECD : LREAL
+- MeanArea : LREAL
+- MeanCircularity : LREAL
+- Connected : BOOL
+- CommsError : DINT
+
+Connected is linked to the internal OPCUA_CONNECT.QO output and CommsError to OPCUA_CONNECT.ERROR.
+
+During testing, the internal OPCUA_READ.VALUE1 values updated correctly, but the composite outputs initially remained at zero because the polling reads did not generate a recurring output event. START_CNF only confirmed polling startup and CNF did not fire cyclically.
+
+This was resolved by adding an internal E_CYCLE block with a periodic trigger of approximately 1 s. Its EO event drives a composite DATA_UPDATED output event, with the exposed data outputs associated using WITH relationships. This causes the latest internal OPC UA values to be propagated through the composite interface at regular intervals.
+
+After this change, all exposed MV and heartbeat values updated correctly, confirming the composite as a functional reusable OPC UA acquisition interface for subsequent supervisory logic and HMI development.
+
+### Conclusion
+
+The validated FrothMV soft-sensor pipeline has now been integrated through OPC UA into the EAE supervisory environment.
+
+
+
+
+
