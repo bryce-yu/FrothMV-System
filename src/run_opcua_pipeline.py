@@ -91,6 +91,7 @@ async def main_async(args):
 
     await opcua_server.start()
 
+    # Temporarily commented out two lines for heartbeat stopped but comms alive test
     heartbeat_task = asyncio.create_task(
         heartbeat_loop(opcua_server)
     )
@@ -127,6 +128,10 @@ async def main_async(args):
                 )
 
             except Exception as exc:
+                await opcua_server.update_pipeline_failure(
+                    f"ERROR: {image_path.name}: {exc}"
+                )
+
                 print(
                     f"[{index}/{len(image_files)}] "
                     f"ERROR: {image_path.name}: {exc}"
@@ -149,7 +154,7 @@ async def main_async(args):
             await asyncio.sleep(1)
 
     finally:
-        heartbeat_task.cancel()
+        heartbeat_task.cancel() # Also commented out for heartbeat stop test
         command_task.cancel()
 
         await opcua_server.stop()

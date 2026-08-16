@@ -218,3 +218,23 @@ class FrothOPCUAServer:
         return bool(
             await self.nodes["CommandFromEAE"].read_value()
         )
+
+    async def update_pipeline_failure(self, status_message):
+        """
+        Publish a pipeline failure state without overwriting
+        the last valid MV measurements.
+        """
+
+        await self.nodes["PipelineOK"].write_value(
+            ua.Variant(
+                False,
+                ua.VariantType.Boolean,
+            )
+        )
+
+        await self.nodes["PipelineStatus"].write_value(
+            ua.Variant(
+                str(status_message),
+                ua.VariantType.String,
+            )
+        )

@@ -282,7 +282,3 @@ After this change, all exposed MV and heartbeat values updated correctly, confir
 
 The validated FrothMV soft-sensor pipeline has now been integrated through OPC UA into the EAE supervisory environment.
 
-
-
-
-
