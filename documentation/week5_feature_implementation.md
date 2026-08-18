@@ -381,3 +381,56 @@ The main tasks should include:
 * selecting representative images for qualitative comparison.
 
 The objective of Session 3 is therefore to determine which implemented features provide the most useful and defensible description of froth morphology before deciding which should become official OPC-UA/EAE supervisory soft-sensor outputs.
+
+
+### Session 3 temp output save:
+Week 5 - Session 3 Soft-Sensor Analysis
+==================================================
+
+Loaded: C:\Users\bgyu5\OneDrive\Documents\UNI\Uni-2026\Semester Two\EEET4001\FrothMV-System\results\soft_sensor_analysis\session2_validation\pipeline_features_40.csv
+Rows: 40
+Columns: 20
+Filename column: filename
+
+Descriptive statistics:
+                                   mean       std       min       25%       50%       75%       max
+bubble_count                   309.3250  141.7568  139.0000  189.7500  266.5000  427.7500  579.0000
+mean_area_px2                  297.8274  125.7350  140.5375  201.5742  259.9885  373.9006  675.4938
+mean_equivalent_diameter_px     16.0112    2.4652   12.0665   14.0894   15.4846   17.6386   22.5825
+median_equivalent_diameter_px   13.2586    1.4988   11.0558   11.8882   13.2070   14.3004   16.6794
+std_equivalent_diameter_px      10.2986    3.3375    5.7738    7.7534    9.5989   11.7888   19.0876
+ecd_p10_px                       8.1533    0.9279    6.4820    7.4400    7.9488    8.8908   10.3109
+ecd_p90_px                      26.3691    6.8088   17.4388   22.2195   24.2614   28.5093   50.9915
+mean_circularity                 0.6382    0.0352    0.5590    0.6171    0.6542    0.6658    0.6806
+mask_area_fraction               0.1907    0.0596    0.0855    0.1473    0.2128    0.2385    0.2899
+
+Week 5 - Session 3 Soft-Sensor Feature Analysis
+=======================================================
+
+Images analysed: 40
+
+Key correlations
+----------------
+Mean area vs mean ECD Pearson: 0.9737
+Mean area vs mean ECD Spearman: 0.9775
+Mean ECD vs median ECD Spearman: 0.9221
+Std ECD vs P90-P10 range Spearman: 0.8208
+Bubble count vs median ECD Spearman: -0.3778
+Bubble count vs mask area fraction Spearman: 0.5984
+
+Mean-vs-median ECD
+------------------
+Mean absolute mean-minus-median difference: 2.7526 px
+Median mean-minus-median difference: 2.4260 px
+
+Important interpretation notes
+------------------------------
+- Correlation does not by itself prove that one feature should be removed.
+- Mean area and mean ECD are mathematically related but are not identical summaries because ECD is calculated per contour before averaging.
+- Std ECD and P90-P10 both describe distribution width. Strong correlation may indicate redundancy.
+- Mask area fraction is predicted mask occupancy of the whole image, not a direct measurement of visible froth surface or physical froth coverage.
+- Low/medium/high mask-occupancy comparisons are exploratory only and should not be interpreted as ground-truth visibility categories.
+
+Analysis complete.
+Results saved to:
+C:\Users\bgyu5\OneDrive\Documents\UNI\Uni-2026\Semester Two\EEET4001\FrothMV-System\results\soft_sensor_analysis\session3_analysis

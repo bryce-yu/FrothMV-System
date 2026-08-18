@@ -1,4 +1,4 @@
-# Week 5 – Soft-Sensor Feature Definition
+# Week 5 – Session 1 Soft-Sensor Feature Definition
 
 ## 1. Starting Point
 

@@ -1,0 +1,26 @@
+Week 5 - Session 3 Soft-Sensor Feature Analysis
+=======================================================
+
+Images analysed: 40
+
+Key correlations
+----------------
+Mean area vs mean ECD Pearson: 0.9737
+Mean area vs mean ECD Spearman: 0.9775
+Mean ECD vs median ECD Spearman: 0.9221
+Std ECD vs P90-P10 range Spearman: 0.8208
+Bubble count vs median ECD Spearman: -0.3778
+Bubble count vs mask area fraction Spearman: 0.5984
+
+Mean-vs-median ECD
+------------------
+Mean absolute mean-minus-median difference: 2.7526 px
+Median mean-minus-median difference: 2.4260 px
+
+Important interpretation notes
+------------------------------
+- Correlation does not by itself prove that one feature should be removed.
+- Mean area and mean ECD are mathematically related but are not identical summaries because ECD is calculated per contour before averaging.
+- Std ECD and P90-P10 both describe distribution width. Strong correlation may indicate redundancy.
+- Mask area fraction is predicted mask occupancy of the whole image, not a direct measurement of visible froth surface or physical froth coverage.
+- Low/medium/high mask-occupancy comparisons are exploratory only and should not be interpreted as ground-truth visibility categories.
