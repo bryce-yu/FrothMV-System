@@ -67,6 +67,10 @@ def calculate_contour_metrics(
     - mean_area_px2
     - mean_equivalent_diameter_px
     - mean_circularity
+    - median_equivalent_diameter_px
+    - std_equivalent_diameter_px
+    - ecd_p10_px
+    - ecd_p90_px
     """
     if not contours:
         return {
@@ -74,6 +78,10 @@ def calculate_contour_metrics(
             "mean_area_px2": 0.0,
             "mean_equivalent_diameter_px": 0.0,
             "mean_circularity": 0.0,
+            "median_equivalent_diameter_px": 0.0,
+            "std_equivalent_diameter_px": 0.0,
+            "ecd_p10_px": 0.0,
+            "ecd_p90_px": 0.0,
         }
 
     areas: list[float] = []
@@ -97,6 +105,11 @@ def calculate_contour_metrics(
         diameters.append(float(equivalent_diameter))
         circularities.append(float(circularity))
 
+    median_equivalent_diameter = float(np.median(diameters))
+    std_equivalent_diameter = float(np.std(diameters))
+    ecd_p10 = float(np.percentile(diameters, 10))
+    ecd_p90 = float(np.percentile(diameters, 90))
+
     return {
         "bubble_count": len(contours),
         "mean_area_px2": float(np.mean(areas)),
@@ -106,4 +119,26 @@ def calculate_contour_metrics(
         "mean_circularity": float(
             np.mean(circularities)
         ),
+        "median_equivalent_diameter_px":
+        median_equivalent_diameter,
+        "std_equivalent_diameter_px":
+            std_equivalent_diameter,
+        "ecd_p10_px": ecd_p10,
+        "ecd_p90_px": ecd_p90,
     }
+
+
+def calculate_mask_area_fraction(
+    binary_mask: np.ndarray,
+) -> float:
+    """
+    Calculate the fraction of image pixels contained
+    in the combined binary segmentation mask.
+    """
+    if binary_mask.size == 0:
+        return 0.0
+
+    return float(
+        np.count_nonzero(binary_mask)
+        / binary_mask.size
+    )

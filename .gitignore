@@ -64,3 +64,8 @@ results/pipeline_runs/*
 
 # Ignore temporary pipeline test images
 dataset/pipeline_test_images/
+
+# Keep lightweight pipeline soft sensor analysis outputs
+!results/soft_sensor_analysis/
+!results/soft_sensor_analysis/*.csv
+!results/soft_sensor_analysis/*.json

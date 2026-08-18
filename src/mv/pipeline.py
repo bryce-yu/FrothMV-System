@@ -17,6 +17,7 @@ from .metrics import (
     calculate_contour_metrics,
     combine_instance_masks,
     extract_external_contours,
+    calculate_mask_area_fraction,
 )
 
 
@@ -131,6 +132,10 @@ class FrothMVPipeline:
             image_shape=(height, width),
         )
 
+        mask_area_fraction = calculate_mask_area_fraction(
+            combined_mask
+        )
+
         contours = extract_external_contours(
             binary_mask=combined_mask,
             minimum_area=(
@@ -191,6 +196,25 @@ class FrothMVPipeline:
             ),
             "mean_circularity": float(
                 contour_metrics["mean_circularity"]
+            ),
+            "median_equivalent_diameter_px": float(
+                contour_metrics[
+                    "median_equivalent_diameter_px"
+                ]
+            ),
+            "std_equivalent_diameter_px": float(
+                contour_metrics[
+                    "std_equivalent_diameter_px"
+                ]
+            ),
+            "ecd_p10_px": float(
+                contour_metrics["ecd_p10_px"]
+            ),
+            "ecd_p90_px": float(
+                contour_metrics["ecd_p90_px"]
+            ),
+            "mask_area_fraction": float(
+                mask_area_fraction
             ),
             "yolo_raw_instance_count": int(
                 raw_instance_count

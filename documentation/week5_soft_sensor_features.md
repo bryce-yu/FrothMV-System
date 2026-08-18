@@ -402,3 +402,24 @@ Session 1 establishes the following Week 5 design decisions:
 6. Raw per-contour arrays will remain internal.
 7. Partial froth visibility is explicitly recognised as a dataset limitation and as motivation for investigating distribution-based features alongside raw bubble count.
 8. OPC-UA/EAE integration changes will be deferred until the new soft-sensor features have been implemented and validated in Python.
+
+
+## Session 1 Design Status Update
+
+The soft-sensor feature set defined during Session 1 was subsequently implemented and validated during Week 5 Session 2.
+
+Implementation status:
+
+* `median_equivalent_diameter_px` — Implemented and tested
+* `std_equivalent_diameter_px` — Implemented and tested
+* `ecd_p10_px` — Implemented and tested
+* `ecd_p90_px` — Implemented and tested
+* `mask_area_fraction` — Implemented and tested
+
+All six metric unit tests passed.
+
+Single-image, five-image, and 40-image pipeline validation were completed successfully.
+
+The 40-image regression comparison confirmed identical bubble counts and only negligible differences in the remaining pre-existing metrics, indicating that the new soft-sensor feature calculations did not materially alter the validated Week 4 MV method.
+
+Detailed implementation and validation results are recorded separately in the Week 5 Session 2 documentation.
