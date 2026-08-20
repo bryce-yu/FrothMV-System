@@ -126,6 +126,28 @@ class FrothOPCUAServer:
             ua.Variant("STARTING", ua.VariantType.String),
         )
 
+        # ---------------------------------------------------------
+        # Added Week 5 MV output features
+        # ---------------------------------------------------------
+
+        self.nodes["MedianECD"] = await froth_object.add_variable(
+            ua.NodeId(11, ns),
+            "MedianECD",
+            ua.Variant(0.0, ua.VariantType.Double),
+        )
+
+        self.nodes["ECD_P10"] = await froth_object.add_variable(
+            ua.NodeId(12, ns),
+            "ECD_P10",
+            ua.Variant(0.0, ua.VariantType.Double),
+        )
+
+        self.nodes["ECD_P90"] = await froth_object.add_variable(
+            ua.NodeId(13, ns),
+            "ECD_P90",
+            ua.Variant(0.0, ua.VariantType.Double),
+        )
+
         await self.server.start()
 
         print()
@@ -173,6 +195,27 @@ class FrothOPCUAServer:
             )
         )
 
+        await self.nodes["MedianECD"].write_value(
+            ua.Variant(
+                float(metrics.get("median_equivalent_diameter_px", 0.0)),
+                ua.VariantType.Double,
+            )
+        )
+
+        await self.nodes["ECD_P10"].write_value(
+            ua.Variant(
+                float(metrics.get("ecd_p10_px", 0.0)),
+                ua.VariantType.Double,
+            )
+        )
+
+        await self.nodes["ECD_P90"].write_value(
+            ua.Variant(
+                float(metrics.get("ecd_p90_px", 0.0)),
+                ua.VariantType.Double,
+            )
+        )
+    
         await self.nodes["ProcessingTime"].write_value(
             ua.Variant(
                 float(metrics.get("processing_time_seconds", 0.0)),

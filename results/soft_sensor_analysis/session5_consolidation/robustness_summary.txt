@@ -1,0 +1,10 @@
+Corrupt image:
+PASS – PipelineOK FALSE and MV_DataValid FALSE.
+
+Heartbeat stale:
+PASS – MV_CommsOK remained TRUE, MV_HeartbeatOK became FALSE,
+MV_DataValid became FALSE.
+
+OPC-UA communication loss:
+PASS – MV_CommsOK and MV_DataValid became FALSE.
+Communication recovered after server restart.

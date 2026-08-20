@@ -122,9 +122,12 @@ async def main_async(args):
                 print(
                     f"[{index}/{len(image_files)}] "
                     f"{image_path.name}: "
-                    f"count={metrics['bubble_count']}, "
-                    f"ECD={metrics['mean_equivalent_diameter_px']:.3f}, "
-                    f"time={metrics['processing_time_seconds']:.3f}s"
+                    f"BubbleCount={metrics['bubble_count']}, "
+                    f"MedianECD={metrics['median_equivalent_diameter_px']:.3f}, "
+                    f"ECD_P10={metrics['ecd_p10_px']:.3f}, "
+                    f"ECD_P90={metrics['ecd_p90_px']:.3f}, "
+                    f"MeanCircularity={metrics['mean_circularity']:.3f}, "
+                    f"ProcessingTime={metrics['processing_time_seconds']:.3f}s"
                 )
 
             except Exception as exc:

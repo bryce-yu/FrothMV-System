@@ -2,6 +2,15 @@
 
 Python-based machine vision edge analytics system for extracting froth flotation bubble metrics and providing supervisory variables for industrial automation integration.
 
+## Project Status
+
+- YOLOv8-seg froth MV pipeline validated.
+- Soft-sensor morphology feature set implemented and analysed.
+- Selected supervisory outputs:
+  BubbleCount, MedianECD, ECD_P10, ECD_P90, MeanCircularity.
+- Python → OPC-UA → EAE communication validated.
+- Supervisory communication, heartbeat and data-validity logic validated.
+
 ## Project Structure
 
 ```text
