@@ -594,3 +594,54 @@ Likely next activities include:
 * preparing for later Control Expert and complete system-integration testing.
 
 The unresolved CAT/HMI live-value binding issue remains independent of the successful OPC-UA/EAE soft-sensor integration and does not prevent progression of the core system architecture.
+
+---
+
+### HMI Update — Subsequent Resolution
+
+Following the completion of Session 4, the previously unresolved CAT/HMI live-value binding issue was investigated further.
+
+The CAT HMI symbol initially received the correct live data values at its function-block inputs but remained inactive, with `QO = FALSE` and an **"FB not initialized"** status. The issue was resolved by connecting the parent `MV_SOFT_SENSOR` composite `INIT` event to the HMI FB `INIT` input, setting the HMI FB `QI` input permanently `TRUE`, and retaining the existing periodic `E_CYCLE.EO` connection to the HMI `DISPLAY` event.
+
+Following this change, the HMI FB initialized successfully and the CAT symbol displayed the live machine-vision values.
+
+### MV Soft-Sensor Integration and HMI Validation
+
+An `MV_SOFT_SENSOR` composite was introduced as the unified interface between the machine-vision acquisition, supervisory-status logic and operator HMI.
+
+The composite exposes the selected froth morphology variables:
+
+* `BubbleCount`
+* `MedianECD`
+* `ECD_P10`
+* `ECD_P90`
+* `MeanCircularity`
+
+together with the supervisory-status indicators:
+
+* `CommsOK`
+* `HeartbeatOK`
+* `PipelineOK`
+* `DataValid`
+
+A CAT-based HMI symbol was integrated within the composite so that both the machine-vision measurements and system-health indicators could be presented through a single operator-facing interface.
+
+The implementation was validated using the standard five-image folder test. The displayed machine-vision measurements updated live as each image was processed, confirming successful end-to-end operation through:
+
+```text
+Python MV inference
+        ↓
+Feature extraction
+        ↓
+Python OPC UA server
+        ↓
+EAE OPC UA acquisition
+        ↓
+MV_SUPERVISORY_STATUS
+        ↓
+MV_SOFT_SENSOR
+        ↓
+CAT HMI
+```
+
+This confirms that the Week 5 soft-sensor variables are now successfully integrated through to the HMI, with both process measurements and supervisory-status information available within the same composite interface.

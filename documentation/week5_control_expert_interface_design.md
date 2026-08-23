@@ -1,0 +1,618 @@
+# Week 5 – Session 5: Early Control Expert Interface Design
+
+## 1. Purpose
+
+The purpose of this session was to define the preliminary interface between EcoStruxure Automation Expert (EAE) and the Control Expert PLC before implementing the final communication layer.
+
+The EAE-to-Control Expert interface will provide the selected machine-vision soft-sensor measurements together with their associated validity and diagnostic status information. The initial purpose of this interface is **supervisory monitoring and later system-integration verification**.
+
+At this stage, the Control Expert PLC is **not intended to perform closed-loop control of the flotation process based on the MV measurements**.
+
+The communication protocol between EAE and Control Expert has not yet been finalised. Both **OPC UA** and **Modbus TCP** remain candidate approaches.
+
+---
+
+## 2. Current System Boundary
+
+The current system architecture can be represented as:
+
+```text
+Python MV
+    ↓
+OPC UA
+    ↓
+EAE
+    ↓
+Selected MV measurements + validity/status
+    ↓
+Future EAE ↔ Control Expert communication interface
+    ↓
+Control Expert PLC
+    ↓
+Supervisory monitoring / verification
+```
+
+The Python-to-EAE communication path is already implemented using OPC UA.
+
+This session therefore focused specifically on defining the next system boundary:
+
+```text
+EAE → Control Expert
+```
+
+without yet committing to a particular communication protocol.
+
+---
+
+## 3. Required EAE → Control Expert Signals
+
+The proposed interface contains the final supervisory morphology variables selected during Week 5 together with the existing MV validity and diagnostic status signals.
+
+| Signal            | Direction | Meaning                                                                           |
+| ----------------- | --------- | --------------------------------------------------------------------------------- |
+| `BubbleCount`     | EAE → CE  | Visible detected bubble population                                                |
+| `MedianECD`       | EAE → CE  | Characteristic detected bubble size                                               |
+| `ECD_P10`         | EAE → CE  | Lower percentile of detected bubble-size distribution                             |
+| `ECD_P90`         | EAE → CE  | Upper percentile of detected bubble-size distribution                             |
+| `MeanCircularity` | EAE → CE  | Mean detected bubble-shape descriptor                                             |
+| `MV_DataValid`    | EAE → CE  | Overall indication that the current MV measurements are valid for supervisory use |
+| `MV_CommsOK`      | EAE → CE  | Python-to-EAE OPC UA communication is healthy                                     |
+| `MV_HeartbeatOK`  | EAE → CE  | Python MV application is actively updating                                        |
+| `PipelineOK`      | EAE → CE  | Most recent MV processing operation completed successfully                        |
+
+The interface deliberately excludes analytical and diagnostic features that were not selected as primary supervisory outputs, such as mean area, mean ECD, ECD standard deviation and mask-area fraction.
+
+---
+
+## 4. Signal Ownership and Direction
+
+### 4.1 Minimum PLC Interface
+
+The minimum interface required for normal supervisory use is:
+
+```text
+BubbleCount
+MedianECD
+ECD_P10
+ECD_P90
+MeanCircularity
+MV_DataValid
+```
+
+`MV_DataValid` provides the PLC with the primary indication of whether the current morphology values should be considered usable.
+
+### 4.2 Extended Diagnostic Interface
+
+The following additional signals are proposed for testing and diagnostic purposes:
+
+```text
+MV_CommsOK
+MV_HeartbeatOK
+PipelineOK
+```
+
+The system will initially be designed using the **extended interface**, as the additional Boolean signals provide useful diagnostic information during system integration and verification.
+
+### 4.3 Signal Ownership
+
+All MV measurements originate from the machine-vision system and are treated as read-only values from the perspective of Control Expert.
+
+| Signal            | Owner                 | Direction | Writable by CE? |
+| ----------------- | --------------------- | --------- | --------------- |
+| `BubbleCount`     | MV/EAE                | EAE → CE  | No              |
+| `MedianECD`       | MV/EAE                | EAE → CE  | No              |
+| `ECD_P10`         | MV/EAE                | EAE → CE  | No              |
+| `ECD_P90`         | MV/EAE                | EAE → CE  | No              |
+| `MeanCircularity` | MV/EAE                | EAE → CE  | No              |
+| `MV_DataValid`    | EAE supervisory logic | EAE → CE  | No              |
+| `MV_CommsOK`      | EAE supervisory logic | EAE → CE  | No              |
+| `MV_HeartbeatOK`  | EAE supervisory logic | EAE → CE  | No              |
+| `PipelineOK`      | MV/EAE                | EAE → CE  | No              |
+
+This establishes a clear ownership boundary and prevents the PLC from modifying values generated by the machine-vision system.
+
+---
+
+## 5. Data Validity Behaviour
+
+### 5.1 PLC Validity Rule
+
+The main validity rule for downstream Control Expert logic is:
+
+```text
+IF MV_DataValid = TRUE THEN
+    MV values may be used for supervisory purposes.
+ELSE
+    MV values must be treated as stale or invalid.
+END_IF;
+```
+
+The individual morphology values do not need to be overwritten with artificial failure values such as `0` or `-1`.
+
+For example:
+
+```text
+MedianECD = 16.2
+MV_DataValid = FALSE
+```
+
+means that `16.2` is the most recently held value but should not currently be treated as valid.
+
+### 5.2 Control Expert Data Handling
+
+When:
+
+```text
+MV_DataValid = TRUE
+```
+
+the PLC may:
+
+* display the MV values;
+* store or log the values;
+* pass the measurements onward within the supervisory system;
+* use the values during later supervisory demonstrations.
+
+When:
+
+```text
+MV_DataValid = FALSE
+```
+
+the PLC should:
+
+* treat the current morphology values as invalid or stale;
+* retain the previous numerical values if desired;
+* clearly indicate the invalid state;
+* avoid using the values for process decisions.
+
+No automatic fallback or closed-loop control strategy is required within the current project scope.
+
+### 5.3 Future New-Result Indication
+
+The existing EAE `DATA_UPDATED` event should not currently be treated as proof that a new image result has been generated, because it periodically propagates the latest available OPC UA values through the acquisition composite.
+
+A future design option is therefore to add an explicit Python-generated identifier such as:
+
+```text
+SampleID
+```
+
+or:
+
+```text
+MV_ResultCounter
+```
+
+which increments once for each successfully processed image.
+
+This would allow downstream systems to distinguish between:
+
+```text
+The interface is alive
+```
+
+and:
+
+```text
+A genuinely new MV result has arrived
+```
+
+---
+
+## 6. OPC UA Candidate Architecture
+
+One candidate implementation is to continue using OPC UA between EAE and Control Expert.
+
+Conceptually:
+
+```text
+Python
+   │
+   │ OPC UA
+   ▼
+EAE
+   │
+   │ OPC UA
+   ▼
+Control Expert PLC
+```
+
+The interface could expose a logical object such as:
+
+```text
+FrothMV
+or
+MVSoftSensor
+```
+
+containing:
+
+```text
+BubbleCount       DINT
+MedianECD         Double
+ECD_P10           Double
+ECD_P90           Double
+MeanCircularity   Double
+
+MV_DataValid      Boolean
+MV_CommsOK        Boolean
+MV_HeartbeatOK    Boolean
+PipelineOK        Boolean
+```
+
+### Advantages
+
+* symbolic variable names can be retained;
+* native data types can be exposed directly;
+* no manual register allocation is required;
+* richer communication and diagnostic semantics are available;
+* provides a consistent OPC UA-based architecture from Python through EAE.
+
+### Items Requiring Verification
+
+Before implementation, the OPC UA capabilities of the available Control Expert PLC/runtime must be confirmed, including:
+
+* supported OPC UA client/server role;
+* supported data types;
+* configuration requirements;
+* compatibility with the intended EAE communication direction.
+
+---
+
+## 7. Modbus TCP Candidate Architecture
+
+The alternative candidate is Modbus TCP between EAE and Control Expert.
+
+Conceptually:
+
+```text
+Python
+   │
+   │ OPC UA
+   ▼
+EAE
+   │
+   │ Modbus TCP
+   ▼
+Control Expert PLC
+```
+
+This approach would demonstrate interoperability between two different industrial communication standards:
+
+```text
+Python → EAE:
+OPC UA
+
+EAE → Control Expert:
+Modbus TCP
+```
+
+A provisional representation is:
+
+| Logical variable  | EAE logical type                      | Proposed Modbus representation            |
+| ----------------- | ------------------------------------- | ----------------------------------------- |
+| `BubbleCount`     | DINT                                  | 2 × 16-bit registers                      |
+| `MedianECD`       | LREAL internally / REAL for interface | 2 × 16-bit registers                      |
+| `ECD_P10`         | LREAL internally / REAL for interface | 2 × 16-bit registers                      |
+| `ECD_P90`         | LREAL internally / REAL for interface | 2 × 16-bit registers                      |
+| `MeanCircularity` | LREAL internally / REAL for interface | 2 × 16-bit registers                      |
+| Status signals    | BOOL                                  | Status word or individual Boolean mapping |
+
+The actual register addresses should not be finalised until the Modbus architecture and data representation have been tested.
+
+### Advantages
+
+* widely supported by conventional PLC platforms;
+* relatively simple communication model;
+* straightforward to inspect and verify;
+* demonstrates interoperability between OPC UA and a traditional industrial protocol.
+
+### Considerations
+
+Modbus TCP would require explicit management of:
+
+* register allocation;
+* 32-bit values spanning multiple 16-bit registers;
+* word ordering;
+* byte ordering where applicable;
+* Boolean/status representation;
+* consistency of multi-register values.
+
+---
+
+## 8. Data Type and Register Considerations
+
+### 8.1 Floating-Point Representation
+
+The current EAE values use high-precision floating-point representations such as `LREAL`.
+
+For example:
+
+```text
+MedianECD = 16.017420774...
+```
+
+This level of precision is unnecessary for the downstream supervisory PLC interface.
+
+If Modbus TCP is selected, the proposed approach is:
+
+```text
+MedianECD LREAL
+       ↓
+Convert to REAL in EAE
+       ↓
+32-bit floating-point representation
+       ↓
+2 × 16-bit Modbus registers
+       ↓
+Control Expert REAL
+```
+
+The same approach can be applied to:
+
+```text
+ECD_P10
+ECD_P90
+MeanCircularity
+```
+
+This maintains sufficient precision while simplifying the Modbus register mapping.
+
+The conversion should occur within the communication/interface layer rather than altering the original Python feature calculations.
+
+### 8.2 Status Word
+
+If Modbus TCP is selected, the four Boolean status signals could optionally be packed into a single status word.
+
+For example:
+
+```text
+Bit 0 = MV_DataValid
+Bit 1 = MV_CommsOK
+Bit 2 = MV_HeartbeatOK
+Bit 3 = PipelineOK
+```
+
+A value represented conceptually as:
+
+```text
+0000 0000 0000 1111
+```
+
+would therefore indicate that all four status conditions are healthy.
+
+Alternatively, individual Boolean/coils may be used if this proves simpler during implementation.
+
+The final choice should prioritise clarity and ease of verification rather than register efficiency alone.
+
+---
+
+## 9. Interface Heartbeat and Update Considerations
+
+### 9.1 Need for a Second-Level Watchdog
+
+The existing heartbeat architecture monitors the health of the Python MV application from within EAE:
+
+```text
+Python
+    ↓
+TestHeartbeat
+    ↓
+EAE
+    ↓
+MV_HeartbeatOK
+```
+
+However, this does not independently verify that the later:
+
+```text
+EAE → Control Expert
+```
+
+communication path remains operational.
+
+A future second-level watchdog may therefore be useful.
+
+### 9.2 EAE Heartbeat
+
+A possible future variable is:
+
+```text
+EAE_Heartbeat
+```
+
+which could increment periodically within EAE and be transmitted to Control Expert.
+
+The PLC could then use logic conceptually similar to the existing EAE heartbeat watchdog:
+
+```text
+IF CurrentHeartbeat <> PreviousHeartbeat THEN
+    EAE_CommsOK := TRUE;
+ELSE
+    ...
+END_IF;
+```
+
+This would produce a two-level health architecture:
+
+```text
+Python heartbeat
+      ↓
+EAE verifies Python/MV application health
+
+EAE heartbeat
+      ↓
+Control Expert verifies EAE/interface health
+```
+
+The EAE heartbeat is therefore intended to answer:
+
+> Is the EAE-to-Control Expert interface alive?
+
+### 9.3 MV Result Counter
+
+A separate future variable:
+
+```text
+MV_ResultCounter
+```
+
+could increment once per successfully processed MV image.
+
+This would answer a different question:
+
+> Has a genuinely new machine-vision result been generated?
+
+The distinction would therefore be:
+
+```text
+EAE_Heartbeat
+→ confirms communication/interface activity
+
+MV_ResultCounter
+→ confirms arrival of a new MV result
+```
+
+These variables are design considerations only and were not required for implementation during this session.
+
+---
+
+## 10. Protocol Selection Criteria
+
+The final EAE-to-Control Expert communication protocol should be selected based on the capabilities of the available hardware and the requirements of the project rather than simply choosing one protocol because it is more modern.
+
+| Criterion                                    | OPC UA                               | Modbus TCP                     |
+| -------------------------------------------- | ------------------------------------ | ------------------------------ |
+| Control Expert hardware support              | Must be verified                     | Expected to be strong          |
+| Setup complexity                             | Depends on controller/runtime        | Generally straightforward      |
+| Symbolic data model                          | Strong                               | Limited                        |
+| Manual register/data packing                 | Not normally required                | Required                       |
+| Diagnostics                                  | Rich                                 | Simpler                        |
+| Interoperability demonstration               | Strong                               | Strong                         |
+| Compatibility with conventional PLCs         | Hardware dependent                   | Excellent                      |
+| Alignment with open automation principles    | Strong                               | Valid open industrial protocol |
+| Demonstrates multi-protocol interoperability | Limited if OPC UA is used throughout | Strong                         |
+
+At this stage, both options remain technically valid.
+
+Modbus TCP may provide an additional interoperability demonstration by linking an OPC UA-based machine-vision/EAE system to a conventional PLC using a different open industrial protocol.
+
+However, the final protocol should favour **reliable implementation, hardware compatibility and clear validation**.
+
+---
+
+## 11. Proposed Architecture
+
+The protocol-independent system architecture is:
+
+```text
+                   MACHINE VISION / PYTHON
+                             │
+                           OPC UA
+                             │
+                             ▼
+                  ┌───────────────────────┐
+                  │          EAE          │
+                  │                       │
+                  │ MV_OPCUA_ACQUISITION │
+                  │          ↓            │
+                  │ MV_SUPERVISORY_STATUS│
+                  └──────────┬────────────┘
+                             │
+                Selected morphology values
+                  + validity/status
+                             │
+                 ┌───────────┴───────────┐
+                 │                       │
+          Option A: OPC UA       Option B: Modbus TCP
+                 │                       │
+                 └───────────┬───────────┘
+                             ▼
+                    CONTROL EXPERT PLC
+                             │
+                             ▼
+              Supervisory monitoring /
+                  system verification
+```
+
+The logical information passed to Control Expert remains the same regardless of which communication protocol is selected.
+
+This separates:
+
+```text
+What information is exchanged
+```
+
+from:
+
+```text
+How that information is transported
+```
+
+which allows the communication protocol to be changed without altering the underlying machine-vision feature calculations.
+
+---
+
+## 12. Future Implementation Plan
+
+This session defined the preliminary EAE-to-Control Expert interface but did not implement the final communication channel.
+
+The later communication/integration stage should:
+
+1. identify the specific Control Expert PLC/runtime to be used;
+2. verify its OPC UA capabilities and supported communication roles;
+3. verify the available Modbus TCP configuration in both EAE and Control Expert;
+4. select the final EAE-to-Control Expert communication protocol;
+5. finalise the interface data types;
+6. if Modbus TCP is selected, define:
+
+   * register addresses;
+   * REAL/DINT representation;
+   * word ordering;
+   * status mapping;
+7. if OPC UA is selected, define:
+
+   * client/server roles;
+   * exposed nodes;
+   * NodeIds or symbolic paths;
+   * corresponding Control Expert variables;
+8. implement the communication interface;
+9. verify individual MV values between EAE and Control Expert;
+10. confirm `MV_DataValid` behaviour at the PLC;
+11. test multi-image dynamic updates;
+12. test communication-loss and recovery behaviour;
+13. determine whether an `EAE_Heartbeat` is required for independent EAE-to-PLC communication supervision;
+14. determine whether an `MV_ResultCounter` is required to identify genuinely new image results;
+15. integrate the verified interface into later whole-system testing.
+
+---
+
+## 13. Session Conclusion
+
+This session established the preliminary interface contract between the EAE supervisory layer and the future Control Expert PLC implementation.
+
+The interface is centred on the selected Week 5 soft-sensor morphology outputs:
+
+```text
+BubbleCount
+MedianECD
+ECD_P10
+ECD_P90
+MeanCircularity
+```
+
+together with:
+
+```text
+MV_DataValid
+MV_CommsOK
+MV_HeartbeatOK
+PipelineOK
+```
+
+The design preserves a clear distinction between the **logical supervisory information** and the **communication protocol used to transport that information**.
+
+Both OPC UA and Modbus TCP remain candidate EAE-to-Control Expert protocols. OPC UA provides a richer symbolic data model, while Modbus TCP offers strong compatibility with conventional PLC systems and could demonstrate multi-protocol interoperability within the overall architecture.
+
+No final protocol selection or implementation was required during this session. The resulting interface definition provides a clear starting point for the later communication and complete system-integration stages.
