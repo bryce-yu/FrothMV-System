@@ -148,6 +148,11 @@ class FrothOPCUAServer:
             ua.Variant(0.0, ua.VariantType.Double),
         )
 
+        # Explicitly ensuring all nodes other than CommandFromEAE cannot be written to
+        for node_name, node in self.nodes.items():
+            if node_name != "CommandFromEAE":
+                await node.set_read_only()
+
         await self.server.start()
 
         print()

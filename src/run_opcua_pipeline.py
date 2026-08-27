@@ -1,10 +1,13 @@
 import argparse
 import asyncio
+import logging
 from pathlib import Path
 
 from mv import MVConfig, FrothMVPipeline
 from communication import FrothOPCUAServer
+from mv.model_integrity import verify_model_integrity
 
+logger = logging.getLogger("froth_mv_pipeline")
 
 SUPPORTED_EXTENSIONS = {
     ".png",
@@ -81,7 +84,16 @@ async def main_async(args):
         minimum_contour_area=10.0,
     )
 
-    pipeline = FrothMVPipeline(config)
+    # Configuration Logging 
+    logger.info("Model path: %s", config.model_path)
+    logger.info(
+        "MV configuration: confidence=%.2f, image_size=%d, "
+        "max_detections=%d, minimum_contour_area=%.1f",
+        config.confidence,
+        config.image_size,
+        config.max_detections,
+        config.minimum_contour_area,
+    )
 
     # ---------------------------------------------------------
     # Start OPC-UA communication layer
@@ -91,7 +103,14 @@ async def main_async(args):
 
     await opcua_server.start()
 
-    # Temporarily commented out two lines for heartbeat stopped but comms alive test
+    logger.info("OPC-UA endpoint: %s", opcua_server.endpoint)
+    logger.warning(
+        "OPC-UA development security: "
+        "Security Policy=None, Message Security Mode=None, "
+        "anonymous access enabled"
+    )
+
+    # Comment out for heartbeat stop test
     heartbeat_task = asyncio.create_task(
         heartbeat_loop(opcua_server)
     )
@@ -100,7 +119,49 @@ async def main_async(args):
         command_monitor(opcua_server)
     )
 
+    pipeline = None
+
     try:
+        model_hash_path = project_root / "models" / "best.pt.sha256"
+
+        try:
+            verified_hash = verify_model_integrity(
+                model_path=config.model_path,
+                hash_path=model_hash_path,
+            )
+
+            print()
+            print("Model integrity verified.")
+            print(f"SHA-256: {verified_hash}")
+
+            logger.info("Model SHA-256 verification passed")
+            logger.info("Model SHA-256: %s", verified_hash)
+
+            pipeline = FrothMVPipeline(config)
+
+            print("FrothMV pipeline loaded successfully.")
+
+            logger.info("FrothMV pipeline loaded successfully")
+
+        except Exception as exc:
+            logger.critical(
+                "Model integrity or pipeline startup failed: %s",
+                exc,
+            )
+
+            await opcua_server.update_pipeline_failure(
+                f"STARTUP MODEL INTEGRITY FAILURE: {exc}"
+            )
+
+            print()
+            print(f"Model integrity check failed: {exc}")
+            print("Pipeline will not process images.")
+            print("OPC-UA server remains available for diagnostics.")
+            print("Press Ctrl+C to stop.")
+
+            while True:
+                await asyncio.sleep(1)
+
         print()
         print(f"Processing {len(image_files)} images...")
         print()
@@ -164,6 +225,13 @@ async def main_async(args):
 
 
 def main():
+    logging.basicConfig(
+        level=logging.WARNING,
+        format="%(asctime)s | %(levelname)s | %(message)s",
+    )
+
+    logging.getLogger("asyncua").setLevel(logging.WARNING)
+        
     parser = argparse.ArgumentParser(
         description=(
             "Process froth images and publish soft-sensor "
