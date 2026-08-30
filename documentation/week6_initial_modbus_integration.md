@@ -162,9 +162,3 @@ The current result is a successful local proof of concept, not a complete produc
 ## 9. Session conclusion
 
 Session 3 successfully established and verified the local EAE-to-Control Expert Modbus TCP interface. The Control Expert PLC Simulator received an initial constant test value, a live `BubbleCount` value of `574`, and the converted `MV_DataValidWord` validity state. The remaining signal mapping, PLC-side supervisory logic and fault testing can proceed in Session 4 without changing the basic connection architecture.
-
-## 10. Suggested commit message
-
-```text
-Verify local EAE to Control Expert Modbus integration
-```
