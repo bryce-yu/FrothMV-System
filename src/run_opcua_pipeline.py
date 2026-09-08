@@ -38,23 +38,6 @@ async def heartbeat_loop(opcua_server):
         await asyncio.sleep(1)
 
 
-async def command_monitor(opcua_server):
-    """
-    Monitor CommandFromEAE and print changes.
-    """
-
-    previous_value = None
-
-    while True:
-        value = await opcua_server.read_command()
-
-        if value != previous_value:
-            print(f"CommandFromEAE changed: {value}")
-            previous_value = value
-
-        await asyncio.sleep(0.25)
-
-
 async def main_async(args):
     project_root = Path(__file__).resolve().parents[1]
 
@@ -113,10 +96,6 @@ async def main_async(args):
     # Comment out for heartbeat stop test
     heartbeat_task = asyncio.create_task(
         heartbeat_loop(opcua_server)
-    )
-
-    command_task = asyncio.create_task(
-        command_monitor(opcua_server)
     )
 
     pipeline = None
@@ -219,7 +198,6 @@ async def main_async(args):
 
     finally:
         heartbeat_task.cancel() # Also commented out for heartbeat stop test
-        command_task.cancel()
 
         await opcua_server.stop()
 

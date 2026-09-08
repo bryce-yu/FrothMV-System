@@ -83,14 +83,7 @@ class FrothOPCUAServer:
             ua.Variant(0, ua.VariantType.Int32),
         )
 
-        self.nodes["CommandFromEAE"] = await froth_object.add_variable(
-            ua.NodeId(5, ns),
-            "CommandFromEAE",
-            ua.Variant(False, ua.VariantType.Boolean),
-        )
-
-        # This is the one node EAE / UaExpert can write.
-        await self.nodes["CommandFromEAE"].set_writable()
+        # *Node ID 5 unused as obsolete CommandFromEAE node and its monitoring from initial testing were removed. 
 
         # ---------------------------------------------------------
         # Remaining MV outputs / diagnostics
@@ -148,10 +141,9 @@ class FrothOPCUAServer:
             ua.Variant(0.0, ua.VariantType.Double),
         )
 
-        # Explicitly ensuring all nodes other than CommandFromEAE cannot be written to
+        # Explicitly ensuring all nodes cannot be written to 
         for node_name, node in self.nodes.items():
-            if node_name != "CommandFromEAE":
-                await node.set_read_only()
+            await node.set_read_only()
 
         await self.server.start()
 
@@ -258,13 +250,6 @@ class FrothOPCUAServer:
                 self.heartbeat,
                 ua.VariantType.Int32,
             )
-        )
-
-    async def read_command(self):
-        """Read the writable command node."""
-
-        return bool(
-            await self.nodes["CommandFromEAE"].read_value()
         )
 
     async def update_pipeline_failure(self, status_message):
