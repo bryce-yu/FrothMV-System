@@ -70,3 +70,6 @@ dataset/pipeline_rep_images/
 !results/soft_sensor_analysis/
 !results/soft_sensor_analysis/*.csv
 !results/soft_sensor_analysis/*.json
+
+# Ignore private key
+certificates/*_key.pem

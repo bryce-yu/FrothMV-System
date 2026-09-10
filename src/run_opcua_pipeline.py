@@ -87,10 +87,11 @@ async def main_async(args):
     await opcua_server.start()
 
     logger.info("OPC-UA endpoint: %s", opcua_server.endpoint)
-    logger.warning(
-        "OPC-UA development security: "
-        "Security Policy=None, Message Security Mode=None, "
-        "anonymous access enabled"
+    logger.info(
+        "OPC-UA security enabled: "
+        "Security Policy=Aes256Sha256RsaPss, "
+        "Message Security Mode=SignAndEncrypt, "
+        "username/password required, anonymous access disabled"
     )
 
     # Comment out for heartbeat stop test
@@ -207,6 +208,9 @@ def main():
         level=logging.WARNING,
         format="%(asctime)s | %(levelname)s | %(message)s",
     )
+
+    # Show FrothMV INFO messages while suppressing asyncua INFO noise.
+    logger.setLevel(logging.INFO)
 
     logging.getLogger("asyncua").setLevel(logging.WARNING)
         

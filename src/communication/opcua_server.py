@@ -1,4 +1,56 @@
+import os
+import logging
+from hmac import compare_digest
+from pathlib import Path
+
 from asyncua import Server, ua
+from asyncua.server.user_managers import UserManager, User, UserRole
+
+# Class added for security
+logger = logging.getLogger(__name__)
+
+
+class FrothMVUserManager(UserManager):
+    """Validate the dedicated EAE OPC-UA username and password."""
+
+    def __init__(self, expected_username: str, expected_password: str):
+        self.expected_username = expected_username
+        self.expected_password = expected_password
+
+    def get_user(
+        self,
+        iserver,
+        username=None,
+        password=None,
+        certificate=None,
+    ):
+        if username is None or password is None:
+            return None
+
+        username_valid = compare_digest(
+            username,
+            self.expected_username,
+        )
+        password_valid = compare_digest(
+            password,
+            self.expected_password,
+        )
+
+        if username_valid and password_valid:
+            logger.info(
+                "Accepted OPC-UA authentication for user %r",
+                username,
+            )
+            return User(
+                role=UserRole.User,
+                name=username,
+            )
+
+        logger.warning(
+            "Rejected OPC-UA authentication attempt for user %r",
+            username,
+        )
+        return None
 
 
 class FrothOPCUAServer:
@@ -26,9 +78,62 @@ class FrothOPCUAServer:
     async def start(self):
         """Initialise and start the OPC-UA server."""
 
-        self.server = Server()
+        # self.server = Server() # was just this before adding security
+
+        username = os.environ.get("FROTH_OPCUA_USERNAME")
+        password = os.environ.get("FROTH_OPCUA_PASSWORD")
+
+        if not username or not password:
+            raise RuntimeError(
+                "FROTH_OPCUA_USERNAME and FROTH_OPCUA_PASSWORD "
+                "must be configured before starting the OPC-UA server."
+            )
+
+        user_manager = FrothMVUserManager(
+            expected_username=username,
+            expected_password=password,
+        )
+
+        self.server = Server(user_manager=user_manager)
 
         await self.server.init()
+
+        await self.server.set_application_uri(
+            "urn:FrothMV:OPCUAServer"
+        )
+
+        # Locate the certificate files from the project root.
+        project_root = Path(__file__).resolve().parents[2]
+        certificate_path = (
+            project_root / "certificates" / "frothmv_server_cert.pem"
+        )
+        private_key_path = (
+            project_root / "certificates" / "frothmv_server_key.pem"
+        )
+
+        if not certificate_path.is_file():
+            raise FileNotFoundError(
+                f"OPC-UA server certificate not found: {certificate_path}"
+            )
+
+        if not private_key_path.is_file():
+            raise FileNotFoundError(
+                f"OPC-UA server private key not found: {private_key_path}"
+            )
+
+        # Load the server application certificate and private key.
+        await self.server.load_certificate(str(certificate_path))
+        await self.server.load_private_key(str(private_key_path))
+
+        # Advertise only the encrypted OPC-UA endpoint.
+        self.server.set_security_policy([
+            ua.SecurityPolicyType.Aes256Sha256RsaPss_SignAndEncrypt,
+        ])
+
+        # Disable anonymous sessions and permit username/password only.
+        self.server.set_identity_tokens([
+            ua.UserNameIdentityToken,
+        ])
 
         self.server.set_endpoint(self.endpoint)
         self.server.set_server_name("FrothMV OPC-UA Server")
