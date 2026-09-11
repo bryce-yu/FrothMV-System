@@ -63,7 +63,7 @@ class FrothOPCUAServer:
 
     def __init__(
         self,
-        endpoint="opc.tcp://0.0.0.0:4841/froth-test/",
+        endpoint="opc.tcp://192.168.1.117:4841/froth-test/", # was originaly 0.0.0.0:4841
         namespace_uri="http://froth.project/test",
     ):
         self.endpoint = endpoint
