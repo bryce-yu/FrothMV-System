@@ -1,6 +1,7 @@
 import argparse
 import asyncio
 import logging
+from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
 from mv import MVConfig, FrothMVPipeline
@@ -8,6 +9,7 @@ from communication import FrothOPCUAServer
 from mv.model_integrity import verify_model_integrity
 
 logger = logging.getLogger("froth_mv_pipeline")
+result_logger = logging.getLogger("froth_mv_pipeline.results")
 
 SUPPORTED_EXTENSIONS = {
     ".png",
@@ -20,13 +22,12 @@ SUPPORTED_EXTENSIONS = {
 
 
 def get_image_files(folder: Path):
-    """Return supported image files in deterministic order."""
+    """Return candidate input files in deterministic order."""
 
     return sorted(
         path
         for path in folder.iterdir()
         if path.is_file()
-        and path.suffix.lower() in SUPPORTED_EXTENSIONS
     )
 
 
@@ -67,7 +68,7 @@ async def main_async(args):
         minimum_contour_area=10.0,
     )
 
-    # Configuration Logging 
+    # Configuration logging 
     logger.info("Model path: %s", config.model_path)
     logger.info(
         "MV configuration: confidence=%.2f, image_size=%d, "
@@ -76,6 +77,16 @@ async def main_async(args):
         config.image_size,
         config.max_detections,
         config.minimum_contour_area,
+    )
+
+    # Active input restrictions logging
+    logger.info(
+    "Input validation: allowed_extensions=%s, "
+    "max_file_size_bytes=%d, expected_dimensions=%dx%d",
+    config.allowed_image_extensions,
+    config.max_image_file_size_bytes,
+    config.expected_image_width,
+    config.expected_image_height,
     )
 
     # ---------------------------------------------------------
@@ -160,6 +171,15 @@ async def main_async(args):
                 # Communication layer only receives the result.
                 await opcua_server.update_metrics(metrics)
 
+                result_logger.info(
+                    "Published MV result: file=%s, status=%s, "
+                    "bubble_count=%d, processing_time_seconds=%.3f",
+                    image_path.name,
+                    metrics.get("status", "UNKNOWN"),
+                    int(metrics.get("bubble_count", 0)),
+                    float(metrics.get("processing_time_seconds", 0.0)),
+                )
+
                 print(
                     f"[{index}/{len(image_files)}] "
                     f"{image_path.name}: "
@@ -172,6 +192,12 @@ async def main_async(args):
                 )
 
             except Exception as exc:
+                logger.error(
+                    "Image processing rejected: file=%s, reason=%s",
+                    image_path,
+                    exc,
+                )
+
                 await opcua_server.update_pipeline_failure(
                     f"ERROR: {image_path.name}: {exc}"
                 )
@@ -204,15 +230,41 @@ async def main_async(args):
 
 
 def main():
+    log_format = "%(asctime)s | %(levelname)s | %(message)s"
+
     logging.basicConfig(
         level=logging.WARNING,
-        format="%(asctime)s | %(levelname)s | %(message)s",
+        format=log_format,
     )
 
-    # Show FrothMV INFO messages while suppressing asyncua INFO noise.
-    logger.setLevel(logging.INFO)
+    log_directory = (
+        Path(__file__).resolve().parents[1] / "logs"
+    )
+    log_directory.mkdir(parents=True, exist_ok=True)
 
+    file_handler = RotatingFileHandler(
+        log_directory / "froth_mv_pipeline.log",
+        maxBytes=1_048_576,
+        backupCount=5,
+        encoding="utf-8",
+    )
+    file_handler.setLevel(logging.INFO)
+    file_handler.setFormatter(logging.Formatter(log_format))
+
+    # The root handler retains application and asyncua warnings.
+    logging.getLogger().addHandler(file_handler)
+
+    # Per-image result records go only to the log file.
+    result_logger.setLevel(logging.INFO)
+    result_logger.handlers.clear()
+    result_logger.addHandler(file_handler)
+    result_logger.propagate = False
+
+    logger.setLevel(logging.INFO)
     logging.getLogger("asyncua").setLevel(logging.WARNING)
+    logging.getLogger(
+        "communication.opcua_server"
+    ).setLevel(logging.INFO)
         
     parser = argparse.ArgumentParser(
         description=(

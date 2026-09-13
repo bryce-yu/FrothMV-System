@@ -20,6 +20,12 @@ class MVConfig:
     max_detections: int = 1000
     minimum_contour_area: float = 10.0
 
+    # Input-integrity restrictions for the current dataset.
+    allowed_image_extensions: tuple[str, ...] = (".png",)
+    max_image_file_size_bytes: int = 2 * 1024 * 1024
+    expected_image_width: int = 800
+    expected_image_height: int = 600
+
     def validate(self) -> None:
         """
         Validate the configuration before the pipeline is used.
@@ -47,4 +53,33 @@ class MVConfig:
         if self.minimum_contour_area < 0:
             raise ValueError(
                 "Minimum contour area cannot be negative."
+            )
+
+
+        if not self.allowed_image_extensions:
+            raise ValueError(
+                "At least one image extension must be permitted."
+            )
+
+        if any(
+            not extension.startswith(".")
+            for extension in self.allowed_image_extensions
+        ):
+            raise ValueError(
+                "Permitted image extensions must begin with '.'."
+            )
+
+        if self.max_image_file_size_bytes <= 0:
+            raise ValueError(
+                "Maximum image file size must be greater than zero."
+            )
+
+        if self.expected_image_width <= 0:
+            raise ValueError(
+                "Expected image width must be greater than zero."
+            )
+
+        if self.expected_image_height <= 0:
+            raise ValueError(
+                "Expected image height must be greater than zero."
             )

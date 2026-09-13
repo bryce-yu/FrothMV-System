@@ -73,3 +73,6 @@ dataset/pipeline_rep_images/
 
 # Ignore private key
 certificates/*_key.pem
+
+# Ignore logs
+/logs/

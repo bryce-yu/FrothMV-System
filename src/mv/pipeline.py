@@ -98,14 +98,60 @@ class FrothMVPipeline:
                 f"Image not found: {path}"
             )
 
+        if not path.is_file():
+            raise ValueError(
+                f"Image path is not a regular file: {path}"
+            )
+
+        allowed_extensions = {
+            extension.lower()
+            for extension in self.config.allowed_image_extensions
+        }
+
+        if path.suffix.lower() not in allowed_extensions:
+            raise ValueError(
+                f"Unsupported image extension '{path.suffix}': {path}"
+            )
+
+        file_size_bytes = path.stat().st_size
+
+        if file_size_bytes == 0:
+            raise ValueError(
+                f"Image file is empty: {path}"
+            )
+
+        if file_size_bytes > self.config.max_image_file_size_bytes:
+            raise ValueError(
+                f"Image file exceeds the configured size limit "
+                f"({file_size_bytes} > "
+                f"{self.config.max_image_file_size_bytes} bytes): {path}"
+            )
+
         image = cv2.imread(str(path))
 
         if image is None:
             raise ValueError(
-                f"OpenCV could not read image: {path}"
+                f"OpenCV could not decode image: {path}"
             )
 
         height, width = image.shape[:2]
+
+        if (
+            width != self.config.expected_image_width
+            or height != self.config.expected_image_height
+        ):
+            raise ValueError(
+                f"Unexpected image dimensions "
+                f"{width}x{height}; expected "
+                f"{self.config.expected_image_width}x"
+                f"{self.config.expected_image_height}: {path}"
+            )
+
+        if image.ndim != 3 or image.shape[2] != 3:
+            raise ValueError(
+                f"Unexpected decoded image format; "
+                f"expected a three-channel image: {path}"
+            )
 
         start_time = time.perf_counter()
 
