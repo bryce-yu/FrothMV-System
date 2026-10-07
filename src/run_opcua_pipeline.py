@@ -128,7 +128,7 @@ async def main_async(args):
             logger.info("Model SHA-256 verification passed")
             logger.info("Model SHA-256: %s", verified_hash)
 
-            pipeline = FrothMVPipeline(config)
+            pipeline = FrothMVPipeline(config, enable_live_preview=True,)
 
             print("FrothMV pipeline loaded successfully.")
 

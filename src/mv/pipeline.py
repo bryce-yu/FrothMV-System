@@ -5,6 +5,7 @@ Reusable YOLO-based froth machine-vision pipeline.
 from __future__ import annotations
 
 import time
+import logging
 from pathlib import Path
 from typing import Any
 
@@ -20,6 +21,7 @@ from .metrics import (
     calculate_mask_area_fraction,
 )
 
+logger = logging.getLogger(__name__)
 
 class FrothMVPipeline:
     """
@@ -28,11 +30,21 @@ class FrothMVPipeline:
     The YOLO model is loaded once when the pipeline object is created.
     """
 
-    def __init__(self, config: MVConfig) -> None:
+    def __init__(
+    self,
+        config: MVConfig,
+        enable_live_preview: bool = False,
+        live_preview_path: str | Path = (
+            "results/live_preview/latest_segmentation.jpg"
+        ),
+    ) -> None:
         config.validate()
 
         self.config = config
         self.model = YOLO(str(config.model_path))
+
+        self.enable_live_preview = enable_live_preview
+        self.live_preview_path = Path(live_preview_path)
 
     @staticmethod
     def _resize_mask(
@@ -83,6 +95,106 @@ class FrothMVPipeline:
                 valid_masks.append(binary_mask)
 
         return valid_masks
+
+    def _save_live_preview(
+        self,
+        image: np.ndarray,
+        combined_mask: np.ndarray,
+        contours: list[np.ndarray],
+        metrics: dict[str, object],
+    ) -> None:
+        """
+        Save a presentation-only preview of the latest valid result.
+        """
+        preview = image.copy()
+
+        # Add a translucent orange segmentation overlay.
+        colour_layer = preview.copy()
+        colour_layer[combined_mask.astype(bool)] = (0, 165, 255)
+
+        preview = cv2.addWeighted(
+            preview,
+            0.70,
+            colour_layer,
+            0.30,
+            0.0,
+        )
+
+        # Draw the final contours used to calculate the metrics.
+        cv2.drawContours(
+            preview,
+            contours,
+            contourIdx=-1,
+            color=(0, 255, 0),
+            thickness=1,
+        )
+
+        text_lines = [
+            "FrothMV Live Segmentation",
+            f"Image: {metrics['filename']}",
+            "Presentation-only display",
+        ]
+
+        line_height = 25
+        panel_width = 440
+        panel_height = 20 + (line_height * len(text_lines))
+
+        image_height = preview.shape[0]
+        panel_top = image_height - panel_height
+
+        # Create a semi-transparent panel at the bottom left.
+        panel_layer = preview.copy()
+
+        cv2.rectangle(
+            panel_layer,
+            (0, panel_top),
+            (panel_width, image_height),
+            color=(0, 0, 0),
+            thickness=-1,
+        )
+
+        preview = cv2.addWeighted(
+            panel_layer,
+            0.65,
+            preview,
+            0.35,
+            0.0,
+        )
+
+        for line_number, text in enumerate(text_lines):
+            cv2.putText(
+                preview,
+                text,
+                (12, panel_top + 25 + line_number * line_height),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.55,
+                (255, 255, 255),
+                1,
+                cv2.LINE_AA,
+            )
+
+        self.live_preview_path.parent.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+
+        # Write to a temporary image before replacing the displayed file.
+        temporary_path = self.live_preview_path.with_name(
+            f"{self.live_preview_path.stem}"
+            f".tmp{self.live_preview_path.suffix}"
+        )
+
+        write_successful = cv2.imwrite(
+            str(temporary_path),
+            preview,
+        )
+
+        if not write_successful:
+            raise OSError(
+                f"Could not write live preview: {temporary_path}"
+            )
+
+        temporary_path.replace(self.live_preview_path)
 
     def process_image(
         self,
@@ -227,7 +339,7 @@ class FrothMVPipeline:
         else:
             instance_to_contour_ratio = 0.0
 
-        return {
+        metrics = {
             "filename": path.name,
             "image_path": str(path.resolve()),
             "status": status,
@@ -283,3 +395,19 @@ class FrothMVPipeline:
                 self.config.minimum_contour_area
             ),
         }
+
+        if self.enable_live_preview:
+            try:
+                self._save_live_preview(
+                    image=image,
+                    combined_mask=combined_mask,
+                    contours=contours,
+                    metrics=metrics,
+                )
+            except Exception as exc:
+                logger.warning(
+                    "Live preview could not be updated: %s",
+                    exc,
+                )
+
+        return metrics
