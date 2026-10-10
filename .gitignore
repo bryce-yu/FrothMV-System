@@ -67,6 +67,9 @@ dataset/pipeline_test_images/
 dataset/pipeline_rep_images/
 dataset/invalid_input_test_images/
 dataset/normal_operation_test/
+dataset/presentation_images_v1/
+dataset/presentation_images/
+
 
 # Keep lightweight pipeline soft sensor analysis outputs
 !results/soft_sensor_analysis/

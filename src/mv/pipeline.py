@@ -194,7 +194,15 @@ class FrothMVPipeline:
                 f"Could not write live preview: {temporary_path}"
             )
 
-        temporary_path.replace(self.live_preview_path)
+        for attempt in range(5):
+            try:
+                temporary_path.replace(self.live_preview_path)
+                break
+            except PermissionError:
+                if attempt == 4:
+                    raise
+
+                time.sleep(0.05)
 
     def process_image(
         self,

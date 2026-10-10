@@ -1,6 +1,7 @@
 import argparse
 import asyncio
 import logging
+import re
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
@@ -21,13 +22,29 @@ SUPPORTED_EXTENSIONS = {
 }
 
 
+def natural_sort_key(path: Path):
+    """Return a filename key that treats digit sequences numerically."""
+
+    parts = re.split(r"(\d+)", path.name.casefold())
+
+    return tuple(
+        (0, int(part))
+        if part.isdigit()
+        else (1, part)
+        for part in parts
+    )
+
+
 def get_image_files(folder: Path):
-    """Return candidate input files in deterministic order."""
+    """Return candidate input files in natural deterministic order."""
 
     return sorted(
-        path
-        for path in folder.iterdir()
-        if path.is_file()
+        (
+            path
+            for path in folder.iterdir()
+            if path.is_file()
+        ),
+        key=natural_sort_key,
     )
 
 
